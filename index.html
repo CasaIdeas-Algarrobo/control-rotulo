@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Rótulos">
+  <meta name="theme-color" content="#1e293b">
+  <title>Rótulos – CasaIdeas Algarrobo</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --azul-900:#1e293b; --azul-700:#1d4ed8; --azul-600:#2563eb; --azul-400:#3b82f6; --azul-300:#93c5fd; --azul-100:#dbeafe; --azul-50:#eff6ff;
+      --blanco:#fff; --gris-900:#111827; --gris-700:#374151; --gris-500:#6b7280; --gris-200:#e5e7eb; --gris-100:#f3f4f6; --gris-50:#f9fafb; --fondo:#f0f2f5;
+      --verde:#16a34a; --verde-bg:#dcfce7; --rojo:#dc2626; --rojo-bg:#fee2e2;
+      --font:'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    html { -webkit-text-size-adjust:100%; }
+    body { font-family:var(--font); background:var(--fondo); color:var(--gris-900); min-height:100vh; display:flex; flex-direction:column; padding-top:env(safe-area-inset-top); }
+    a { color:var(--azul-600); } a:hover { color:var(--azul-700); }
+    .header { background:var(--blanco); border-bottom:1px solid var(--gris-200); box-shadow:0 1px 8px rgba(0,0,0,.06); position:sticky; top:0; z-index:50; }
+    .header-inner { max-width:760px; margin:0 auto; padding:12px 18px; display:flex; align-items:center; gap:14px; }
+    .logo-wrap { background:var(--gris-50); border:1px solid var(--gris-200); border-radius:10px; padding:6px 10px; flex-shrink:0; }
+    .logo { height:30px; display:block; }
+    .eyebrow-h { font-size:9px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase; color:var(--azul-600); }
+    .title-h { font-size:19px; font-weight:900; letter-spacing:-.5px; line-height:1.1; }
+    .loc-h { font-size:11px; color:var(--gris-500); margin-top:2px; }
+    .main { flex:1; max-width:760px; width:100%; margin:0 auto; padding:18px 16px 48px; display:flex; flex-direction:column; gap:14px; }
+    .card { background:var(--blanco); border:1px solid var(--gris-200); border-radius:14px; padding:18px; box-shadow:0 4px 24px rgba(0,0,0,.08); }
+    .eyebrow { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--azul-600); margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+    .eyebrow::before { content:''; width:3px; height:14px; background:var(--azul-600); border-radius:2px; }
+    .row { display:flex; gap:8px; }
+    input[type=text], input[type=number], select { width:100%; min-width:0; padding:12px 13px; border:2px solid var(--gris-200); border-radius:11px; font-size:16px; font-family:var(--font); background:var(--gris-50); color:var(--gris-900); outline:none; -webkit-appearance:none; }
+    input:focus, select:focus { border-color:var(--azul-400); background:var(--blanco); box-shadow:0 0 0 4px rgba(59,130,246,.1); }
+    .btn { padding:12px 18px; border:none; border-radius:11px; font-size:15px; font-weight:700; font-family:var(--font); cursor:pointer; min-height:48px; display:inline-flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; -webkit-tap-highlight-color:transparent; }
+    .btn:active { transform:scale(.97); }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+    .btn.primary { background:linear-gradient(135deg, var(--azul-700), var(--azul-600)); color:#fff; box-shadow:0 4px 14px rgba(29,78,216,.3); }
+    .btn.ghost { background:var(--gris-100); color:var(--gris-700); border:2px solid var(--gris-200); }
+    .btn.verde { background:var(--verde); color:#fff; }
+    .btn.sm { min-height:38px; padding:8px 12px; font-size:13px; }
+    .btn-cam { width:52px; flex-shrink:0; padding:0; font-size:22px; }
+    .sug { margin-top:6px; border:1px solid var(--gris-200); border-radius:11px; overflow:hidden; }
+    .sug button { display:block; width:100%; text-align:left; padding:11px 13px; background:var(--blanco); border:none; border-top:1px solid var(--gris-100); font-family:var(--font); font-size:14px; cursor:pointer; }
+    .sug button:first-child { border-top:none; }
+    .sug button:hover { background:var(--azul-50); }
+    .sug small { display:block; color:var(--gris-500); font-family:ui-monospace, monospace; font-size:12px; margin-top:2px; }
+    .feedback { font-size:13px; font-weight:600; margin-top:8px; min-height:18px; }
+    .feedback.error { color:var(--rojo); } .feedback.ok { color:var(--verde); }
+    .seg { display:flex; gap:6px; background:var(--gris-100); border-radius:12px; padding:4px; }
+    .seg button { flex:1; padding:10px 8px; border:none; border-radius:9px; background:transparent; font-family:var(--font); font-size:13px; font-weight:700; color:var(--gris-500); cursor:pointer; }
+    .seg button.on { background:var(--blanco); color:var(--azul-700); box-shadow:0 1px 4px rgba(0,0,0,.1); }
+    .muted { font-size:12px; color:var(--gris-500); line-height:1.45; }
+    /* Vista previa del rótulo (10 × 5 cm) */
+    .preview-wrap { display:flex; justify-content:center; padding:14px; background:var(--gris-100); border-radius:12px; overflow:hidden; }
+    .item { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; padding:12px 0; border-top:1px solid var(--gris-100); }
+    .item:first-child { border-top:none; }
+    .item-desc { font-size:14px; font-weight:700; line-height:1.3; }
+    .item-sku { font-size:12px; color:var(--gris-500); font-family:ui-monospace, monospace; margin-top:2px; }
+    .qty { display:flex; align-items:center; gap:4px; }
+    .qty button { width:34px; height:34px; border-radius:9px; border:2px solid var(--gris-200); background:var(--gris-50); font-size:17px; font-weight:800; cursor:pointer; }
+    .qty input { width:54px; text-align:center; padding:7px 4px; font-size:15px; }
+    .qty .del { border-color:#fecaca; background:var(--rojo-bg); color:var(--rojo); }
+    .empty { text-align:center; color:var(--gris-500); font-size:14px; padding:22px 10px; }
+    .hidden { display:none !important; }
+    .footer { text-align:center; padding:16px; font-size:11px; color:var(--gris-500); border-top:1px solid var(--gris-200); background:var(--blanco); padding-bottom:calc(16px + env(safe-area-inset-bottom)); }
+
+    /* Rótulo tamaño fleje (90 × 35 mm) */
+    .rotulo { width:90mm; height:35mm; background:#fff; color:#000; border:1px solid #cbd5e1; border-radius:1.5mm; padding:2.5mm 3mm; display:grid; grid-template-columns:minmax(0,1fr) 42mm; gap:2.5mm; overflow:hidden; font-family:Arial, Helvetica, sans-serif; }
+    .rot-info { display:flex; flex-direction:column; min-width:0; }
+    .rot-mundo { font-size:7pt; font-weight:700; text-transform:uppercase; letter-spacing:.3pt; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .rot-desc { font-size:10pt; font-weight:700; line-height:1.15; margin-top:1.2mm; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+    .rot-fecha { font-size:6.5pt; margin-top:auto; }
+    .rot-bar { display:flex; align-items:center; justify-content:center; min-width:0; }
+    .rot-bar svg { width:100%; height:auto; max-height:29mm; }
+
+    /* Escáner */
+    .scan-ov { position:fixed; inset:0; background:#000; z-index:999; display:flex; flex-direction:column; }
+    .scan-head { background:#0f172a; padding:14px 18px; padding-top:calc(14px + env(safe-area-inset-top)); display:flex; justify-content:space-between; align-items:center; color:#fff; }
+    .scan-head b { font-size:15px; }
+    .scan-close { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); color:#fff; font-weight:700; font-size:13px; padding:7px 14px; border-radius:20px; cursor:pointer; }
+    .scan-view { flex:1; position:relative; overflow:hidden; }
+    #reader { width:100% !important; height:100% !important; border:none !important; }
+    #reader video { width:100% !important; height:100% !important; object-fit:cover !important; }
+    .scan-perm { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px; text-align:center; color:#cbd5e1; font-size:14px; }
+    .scan-status { background:#0f172a; color:rgba(255,255,255,.8); font-size:14px; text-align:center; padding:13px 16px; min-height:52px; padding-bottom:calc(13px + env(safe-area-inset-bottom)); }
+    .scan-status.ok { background:var(--verde); color:#fff; font-weight:700; }
+
+    /* Impresión */
+    #print-area { display:none; }
+    @media print {
+      body { background:#fff; padding:0; display:block; min-height:0; }
+      body > *:not(#print-area) { display:none !important; }
+      #print-area { display:block; }
+      #print-area .rotulo { border:none; border-radius:0; }
+      #print-area.etiqueta .rotulo { page-break-after:always; break-after:page; }
+      #print-area.etiqueta .rotulo:last-child { page-break-after:auto; break-after:auto; }
+      #print-area.hoja .hoja-grid { display:grid; grid-template-columns:90mm 90mm; grid-auto-rows:35mm; gap:0; justify-content:center; }
+      #print-area.hoja .rotulo { outline:0.2mm dashed #9ca3af; outline-offset:-0.1mm; break-inside:avoid; }
+      #print-area.hoja .hoja-grid { page-break-after:always; break-after:page; }
+      #print-area.hoja .hoja-grid:last-child { page-break-after:auto; break-after:auto; }
+    }
+  </style>
+  <style id="page-style">@page { size:90mm 35mm; margin:0; }</style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo-wrap"><img src="https://www.casaideas.com.bo/static/media/logo.40b7cd09.png" alt="Casaideas" class="logo" onerror="this.parentNode.style.display='none'"/></div>
+      <div>
+        <div class="eyebrow-h">Bodega y sala</div>
+        <div class="title-h">Rótulos</div>
+        <div class="loc-h">📍 Algarrobo</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="card">
+      <div class="eyebrow">1 · Busca el producto</div>
+      <div class="row">
+        <input type="text" id="buscar" placeholder="Escanea o escribe SKU / descripción" autocomplete="off" inputmode="search"/>
+        <button class="btn ghost btn-cam" id="btn-cam" title="Escanear con la cámara">📷</button>
+      </div>
+      <div class="sug hidden" id="sug"></div>
+      <p class="feedback" id="fb-buscar"></p>
+    </div>
+
+    <div class="card hidden" id="card-prev">
+      <div class="eyebrow">2 · Rótulo</div>
+      <div class="preview-wrap"><div id="preview"></div></div>
+      <div class="row" style="margin-top:14px; align-items:center; flex-wrap:wrap;">
+        <span class="muted" style="font-weight:700;">Copias</span>
+        <div class="qty">
+          <button type="button" data-prev-q="-1">−</button>
+          <input type="number" id="prev-copias" value="1" min="1" max="200" inputmode="numeric"/>
+          <button type="button" data-prev-q="1">＋</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px; flex-wrap:wrap;">
+        <button class="btn primary" id="btn-imprimir-uno" style="flex:1;">🖨️ Imprimir ahora</button>
+        <button class="btn ghost" id="btn-agregar" style="flex:1;">＋ Agregar a la lista</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Lista para imprimir</div>
+      <p class="muted" style="margin:-4px 0 6px;">Se imprime en hoja carta o A4, 14 flejes por hoja (2 × 7) con líneas de corte.</p>
+      <div id="lista"></div>
+      <div class="row hidden" id="lista-acc" style="margin-top:12px; flex-wrap:wrap;">
+        <button class="btn verde" id="btn-imprimir-lista" style="flex:1;">🖨️ Imprimir lista</button>
+        <button class="btn ghost" id="btn-vaciar">Vaciar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Impresora para «Imprimir ahora»</div>
+      <div class="seg" id="modo">
+        <button type="button" data-modo="etiqueta" class="on">🏷️ Etiqueta 9 × 3,5 cm</button>
+        <button type="button" data-modo="hoja">📄 Hoja carta / A4</button>
+      </div>
+      <p class="muted" id="modo-ayuda" style="margin-top:10px;"></p>
+    </div>
+  </main>
+
+  <footer class="footer">Rótulos &nbsp;·&nbsp; CasaIdeas Algarrobo</footer>
+
+  <div class="scan-ov hidden" id="scan">
+    <div class="scan-head"><b>📷 Escanear código</b><button class="scan-close" id="scan-cerrar">✕ Cerrar</button></div>
+    <div class="scan-view">
+      <div id="reader"></div>
+      <div class="scan-perm hidden" id="scan-perm">
+        <div style="font-size:40px;">📷</div>
+        <div>Para escanear, permite el uso de la cámara.</div>
+        <button class="btn primary" id="scan-permitir">Permitir cámara</button>
+      </div>
+    </div>
+    <div class="scan-status" id="scan-status">Iniciando…</div>
+  </div>
+
+  <div id="print-area"></div>
+
+  <script>
+  'use strict';
+  const sb = window.supabase.createClient('https://xfvgwbwzwqszzkmuxepv.supabase.co', 'sb_publishable_IO8P8rQM-ec1d3h9_ADdhw_Da4DuimC');
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const hoyTxt = () => new Date().toLocaleDateString('es-CL', { day:'2-digit', month:'2-digit', year:'numeric' });
+
+  let actual = null;                // producto en vista previa
+  let LISTA = [];                   // [{ sku, descripcion, mundo, copias }]
+  let MODO = 'etiqueta';
+  try { LISTA = JSON.parse(localStorage.getItem('rotulos_lista') || '[]'); MODO = localStorage.getItem('rotulos_modo') || 'etiqueta'; } catch (e) {}
+  const guardarLista = () => { try { localStorage.setItem('rotulos_lista', JSON.stringify(LISTA)); } catch (e) {} };
+
+  /* ── Búsqueda en la base de productos ── */
+  async function buscarSku(sku) {
+    sku = String(sku).trim();
+    const { data } = await sb.from('productos').select('sku,descripcion,categoria,codigo_madre').eq('sku', sku).maybeSingle();
+    if (data) return data;
+    const s = await sb.from('stock').select('sku,descripcion,categoria').eq('sku', sku).maybeSingle();
+    return s.data || null;
+  }
+  let tBusca = null;
+  $('buscar').addEventListener('input', () => {
+    clearTimeout(tBusca);
+    const q = $('buscar').value.trim();
+    if (q.length < 3 || /^\d{8,}$/.test(q)) { $('sug').classList.add('hidden'); return; }
+    tBusca = setTimeout(async () => {
+      const campo = /^\d+$/.test(q) ? 'sku' : 'descripcion';
+      const { data } = campo === 'sku'
+        ? await sb.from('productos').select('sku,descripcion,categoria').like('sku', q + '%').limit(8)
+        : await sb.from('productos').select('sku,descripcion,categoria').ilike('descripcion', '%' + q + '%').limit(8);
+      if ($('buscar').value.trim() !== q) return;
+      const r = data || [];
+      $('sug').innerHTML = r.map((p, i) => `<button type="button" data-i="${i}">${esc(p.descripcion || '(sin descripción)')}<small>${esc(p.sku)}${p.categoria ? ' · ' + esc(p.categoria) : ''}</small></button>`).join('');
+      $('sug').classList.toggle('hidden', !r.length);
+      $('sug').querySelectorAll('button').forEach(b => b.onclick = () => { $('sug').classList.add('hidden'); $('buscar').value = ''; mostrar(r[+b.dataset.i]); });
+    }, 250);
+  });
+  $('buscar').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); elegirSku($('buscar').value); } });
+  async function elegirSku(v) {
+    v = String(v || '').trim(); if (!v) return;
+    $('sug').classList.add('hidden');
+    $('fb-buscar').textContent = 'Buscando…'; $('fb-buscar').className = 'feedback';
+    let p = null;
+    try { p = await buscarSku(v); } catch (e) {}
+    if (!p) { $('fb-buscar').textContent = 'No se encontró el SKU ' + v; $('fb-buscar').className = 'feedback error'; return; }
+    $('fb-buscar').textContent = ''; $('buscar').value = '';
+    mostrar(p);
+  }
+
+  /* ── Rótulo ── */
+  function formatoBarra(sku) {
+    if (/^\d{13}$/.test(sku)) {
+      const d = sku.split('').map(Number), s = d.slice(0, 12).reduce((a, n, i) => a + n * (i % 2 ? 3 : 1), 0);
+      if ((10 - s % 10) % 10 === d[12]) return 'EAN13';
+    }
+    return 'CODE128';
+  }
+  function rotuloHtml(p) {
+    return `<div class="rotulo">
+      <div class="rot-info">
+        <span class="rot-mundo">${esc(p.mundo || p.categoria || '')}</span>
+        <div class="rot-desc">${esc(p.descripcion || '')}</div>
+        <span class="rot-fecha">Impreso ${hoyTxt()}</span>
+      </div>
+      <div class="rot-bar"><svg data-barra="${esc(p.sku)}"></svg></div>
+    </div>`;
+  }
+  function dibujarBarras(root) {
+    root.querySelectorAll('svg[data-barra]').forEach(svg => {
+      const sku = svg.dataset.barra;
+      try { JsBarcode(svg, sku, { format: formatoBarra(sku), width: 2, height: 70, fontSize: 18, margin: 0, textMargin: 2, displayValue: true }); }
+      catch (e) { try { JsBarcode(svg, sku, { format: 'CODE128', width: 2, height: 70, fontSize: 18, margin: 0 }); } catch (e2) {} }
+    });
+  }
+  function mostrar(p) {
+    actual = { sku: String(p.sku), descripcion: p.descripcion || '', mundo: p.categoria || p.mundo || '' };
+    $('preview').innerHTML = rotuloHtml(actual);
+    dibujarBarras($('preview'));
+    $('prev-copias').value = 1;
+    $('card-prev').classList.remove('hidden');
+  }
+  document.querySelectorAll('[data-prev-q]').forEach(b => b.onclick = () => {
+    $('prev-copias').value = Math.max(1, Math.min(200, (+$('prev-copias').value || 1) + +b.dataset.prevQ));
+  });
+
+  /* ── Lista ── */
+  function pintarLista() {
+    $('lista').innerHTML = LISTA.length ? LISTA.map((p, i) => `<div class="item">
+      <div><div class="item-desc">${esc(p.descripcion)}</div><div class="item-sku">${esc(p.sku)}${p.mundo ? ' · ' + esc(p.mundo) : ''}</div></div>
+      <div class="qty">
+        <button type="button" data-q="${i}" data-d="-1">−</button>
+        <input type="number" data-qi="${i}" value="${p.copias}" min="1" max="200" inputmode="numeric"/>
+        <button type="button" data-q="${i}" data-d="1">＋</button>
+        <button type="button" class="del" data-del="${i}" title="Quitar">✕</button>
+      </div></div>`).join('') : '<div class="empty">Agrega productos para imprimir varios rótulos juntos.</div>';
+    const tot = LISTA.reduce((a, p) => a + p.copias, 0);
+    $('lista-acc').classList.toggle('hidden', !LISTA.length);
+    const hojas = Math.ceil(tot / POR_HOJA);
+    $('btn-imprimir-lista').textContent = '🖨️ Imprimir lista · ' + tot + ' rótulo' + (tot === 1 ? '' : 's') + ' · ' + hojas + ' hoja' + (hojas === 1 ? '' : 's');
+    $('lista').querySelectorAll('[data-q]').forEach(b => b.onclick = () => { const p = LISTA[+b.dataset.q]; p.copias = Math.max(1, Math.min(200, p.copias + +b.dataset.d)); guardarLista(); pintarLista(); });
+    $('lista').querySelectorAll('[data-qi]').forEach(inp => inp.onchange = () => { LISTA[+inp.dataset.qi].copias = Math.max(1, Math.min(200, +inp.value || 1)); guardarLista(); pintarLista(); });
+    $('lista').querySelectorAll('[data-del]').forEach(b => b.onclick = () => { LISTA.splice(+b.dataset.del, 1); guardarLista(); pintarLista(); });
+  }
+  $('btn-agregar').onclick = () => {
+    if (!actual) return;
+    const c = Math.max(1, +$('prev-copias').value || 1), ex = LISTA.find(p => p.sku === actual.sku);
+    if (ex) ex.copias += c; else LISTA.push({ ...actual, copias: c });
+    guardarLista(); pintarLista();
+    $('card-prev').classList.add('hidden'); actual = null;
+    $('buscar').focus();
+  };
+  $('btn-vaciar').onclick = () => { if (confirm('¿Vaciar la lista?')) { LISTA = []; guardarLista(); pintarLista(); } };
+
+  /* ── Impresión ── */
+  const AYUDA = {
+    etiqueta: 'Un fleje por etiqueta. En la ventana de impresión elige tu impresora de etiquetas, tamaño 90 × 35 mm, márgenes "Ninguno" y escala 100%.',
+    hoja: 'Hasta 14 flejes por hoja (2 × 7) con líneas de corte. En la ventana de impresión elige Carta o A4, márgenes "Ninguno" o "Mínimo" y escala 100%.'
+  };
+  function pintarModo() {
+    document.querySelectorAll('#modo button').forEach(b => b.classList.toggle('on', b.dataset.modo === MODO));
+    $('modo-ayuda').textContent = AYUDA[MODO];
+  }
+  document.querySelectorAll('#modo button').forEach(b => b.onclick = () => { MODO = b.dataset.modo; try { localStorage.setItem('rotulos_modo', MODO); } catch (e) {} pintarModo(); });
+  const POR_HOJA = 14;   // 2 columnas × 7 filas de 90 × 35 mm
+  function imprimir(items, modo) {
+    modo = modo || MODO;
+    const todos = [];
+    items.forEach(p => { for (let i = 0; i < p.copias; i++) todos.push(p); });
+    if (!todos.length) return;
+    const area = $('print-area');
+    area.className = modo;
+    if (modo === 'hoja') {
+      let h = '';
+      for (let i = 0; i < todos.length; i += POR_HOJA) h += '<div class="hoja-grid">' + todos.slice(i, i + POR_HOJA).map(rotuloHtml).join('') + '</div>';
+      area.innerHTML = h;
+      $('page-style').textContent = '@page { margin:8mm; }';
+    } else {
+      area.innerHTML = todos.map(rotuloHtml).join('');
+      $('page-style').textContent = '@page { size:90mm 35mm; margin:0; }';
+    }
+    dibujarBarras(area);
+    setTimeout(() => window.print(), 150);
+  }
+  $('btn-imprimir-uno').onclick = () => { if (actual) imprimir([{ ...actual, copias: Math.max(1, +$('prev-copias').value || 1) }]); };
+  $('btn-imprimir-lista').onclick = () => imprimir(LISTA, 'hoja');
+
+  /* ── Escáner con cámara ── */
+  let qr = null, activo = false;
+  $('btn-cam').onclick = abrirScanner;
+  $('scan-cerrar').onclick = cerrarScanner;
+  $('scan-permitir').onclick = async () => {
+    try { const st = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); st.getTracks().forEach(t => t.stop()); iniciarCam(); }
+    catch (e) { $('scan-status').textContent = 'Permiso denegado. Actívalo en la configuración del navegador (ícono 🔒 junto a la dirección) y vuelve a intentar.'; }
+  };
+  async function abrirScanner() {
+    $('scan').classList.remove('hidden');
+    $('scan-status').className = 'scan-status';
+    let estado = 'prompt';
+    try { if (navigator.permissions) estado = (await navigator.permissions.query({ name: 'camera' })).state; } catch (e) {}
+    if (estado === 'granted') iniciarCam();
+    else { $('scan-perm').classList.remove('hidden'); $('scan-status').textContent = estado === 'denied' ? 'La cámara está bloqueada. Actívala en la configuración del navegador.' : 'Toca «Permitir cámara».'; }
+  }
+  async function iniciarCam() {
+    $('scan-perm').classList.add('hidden');
+    $('scan-status').textContent = 'Iniciando cámara…';
+    try {
+      qr = new Html5Qrcode('reader', { formatsToSupport: [Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8, Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.ITF], verbose: false });
+      await qr.start({ facingMode: 'environment' }, { fps: 12, qrbox: { width: 280, height: 110 } }, leido, () => {});
+      activo = true; $('scan-status').textContent = 'Apunta al código de barras…';
+    } catch (e) { $('scan-status').textContent = 'No se pudo iniciar la cámara. Escribe el SKU a mano.'; }
+  }
+  async function leido(cod) {
+    if (!activo) return; activo = false;
+    if (navigator.vibrate) navigator.vibrate([90, 40, 90]);
+    $('scan-status').className = 'scan-status ok'; $('scan-status').textContent = cod;
+    setTimeout(async () => { await cerrarScanner(); elegirSku(cod); }, 500);
+  }
+  async function cerrarScanner() {
+    if (qr) { try { await qr.stop(); } catch (e) {} qr = null; }
+    activo = false; $('reader').innerHTML = '';
+    $('scan').classList.add('hidden');
+  }
+
+  pintarModo();
+  pintarLista();
+  </script>
+</body>
+</html>
