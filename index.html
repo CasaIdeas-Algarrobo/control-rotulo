@@ -74,7 +74,7 @@
     .rot-info { display:flex; flex-direction:column; min-width:0; }
     .rot-mundo { font-size:7pt; font-weight:700; text-transform:uppercase; letter-spacing:.3pt; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .rot-desc { font-size:10pt; font-weight:700; line-height:1.15; margin-top:1.2mm; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-    .rot-fecha { font-size:6.5pt; margin-top:auto; }
+    .rot-fecha { font-size:6.5pt; margin-bottom:0.8mm; }
     .rot-bar { display:flex; align-items:center; justify-content:center; min-width:0; }
     .rot-bar svg { width:100%; height:auto; max-height:29mm; }
 
@@ -260,9 +260,9 @@
   function rotuloHtml(p) {
     return `<div class="rotulo">
       <div class="rot-info">
+        <span class="rot-fecha">Impreso ${hoyTxt()}</span>
         <span class="rot-mundo">${esc(p.mundo || p.categoria || '')}</span>
         <div class="rot-desc">${esc(p.descripcion || '')}</div>
-        <span class="rot-fecha">Impreso ${hoyTxt()}</span>
       </div>
       <div class="rot-bar"><svg data-barra="${esc(p.sku)}"></svg></div>
     </div>`;
@@ -344,13 +344,14 @@
       let h = '';
       for (let i = 0; i < todos.length; i += POR_HOJA) h += '<div class="hoja-grid">' + todos.slice(i, i + POR_HOJA).map(rotuloHtml).join('') + '</div>';
       area.innerHTML = h;
-      $('page-style').textContent = '@page { margin:8mm; }';
+      $('page-style').textContent = '@page { size:auto; margin:0; } #print-area.hoja { padding:8mm; }';
     } else {
       area.innerHTML = todos.map(rotuloHtml).join('');
       $('page-style').textContent = '@page { size:' + MED.an + 'mm ' + MED.al + 'mm; margin:0; }';
     }
     dibujarBarras(area);
-    setTimeout(() => window.print(), 150);
+    const titulo = document.title; document.title = ' ';
+    setTimeout(() => { window.print(); document.title = titulo; }, 150);
   }
   $('btn-imprimir-uno').onclick = () => { if (actual) imprimir([{ ...actual, copias: Math.max(1, +$('prev-copias').value || 1) }]); };
   $('btn-imprimir-lista').onclick = () => imprimir(LISTA, 'hoja');
